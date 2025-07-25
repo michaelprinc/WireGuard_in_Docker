@@ -1,0 +1,61 @@
+services:
+  wireguard:
+    build:
+      dockerfile: Dockerfile
+    image: linuxserver/wireguard
+    container_name: wireguard
+    user: root
+    entrypoint: ["/wg/entrypoint.sh"]
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+      net.ipv4.conf.all.rp_filter: "0"
+      net.ipv4.conf.default.rp_filter: "0"
+      net.ipv4.conf.all.src_valid_mark: "1"
+    networks:
+      wg_bridge:
+        ipv4_address: 172.20.0.2
+        aliases:
+          - vpn
+    ports:
+      - "51820:51820/udp"
+    privileged: true
+    volumes:
+      - ./entrypoint.sh:/wg/entrypoint.sh:ro
+      - ./.env:/wg/.env:ro
+      - ./wg0.conf.tpl:/wg0.conf.tpl:ro
+      - ./keys_in:/wg/keys_in
+      - ./keys_out:/wg/keys_out   
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    build:
+      dockerfile: Dockerfile.nginx
+    depends_on:
+      - wireguard
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      wg_bridge:
+        ipv4_address: 172.20.0.3
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+networks:
+  wg_bridge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
