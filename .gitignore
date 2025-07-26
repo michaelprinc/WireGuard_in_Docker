@@ -36,3 +36,6 @@ pids/
 *.swp
 *.swo
 *~
+
+# Old project files
+another_use_case_with_docker_applications/*

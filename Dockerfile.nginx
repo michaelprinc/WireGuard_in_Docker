@@ -1,0 +1,34 @@
+FROM nginx:alpine
+
+# Install required packages
+RUN apk add --no-cache \
+    bash \
+    openssl \
+    certbot \
+    certbot-nginx \
+    supervisor \
+    dos2unix \
+    curl \
+    python3 \
+    py3-pip \
+    sudo \
+    openrc
+
+# Copy configurations
+COPY config/nginx/nginx.conf /etc/nginx/nginx.conf.default
+COPY config/nginx/nginx_advanced.conf /etc/nginx/nginx_advanced.conf.default
+COPY scripts/entrypoint_advanced_nginx.sh /entrypoint.sh
+
+# Create directories
+RUN mkdir -p /var/www/certbot && \
+    mkdir -p /etc/letsencrypt && \
+    chmod +x /entrypoint.sh
+
+# Environment variables with defaults
+ENV ADVANCED_CONFIGURATION=0 \
+    WEBSITE_DOMAIN=localhost \
+    SSL_ENABLED=0 \
+    CERTBOT_ENABLED=0
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

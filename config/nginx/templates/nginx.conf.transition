@@ -1,0 +1,29 @@
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+# HTTP Server for certificate validation and non-SSL traffic
+server {
+    listen 80;
+    server_name ${WEBSITE_DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        set $should_redirect 0;
+        if (-f /etc/letsencrypt/live/${WEBSITE_DOMAIN}/fullchain.pem) {
+            set $should_redirect 1;
+        }
+        if ($should_redirect = 1) {
+            return 301 https://$host$request_uri;
+        }
+        proxy_pass http://${SERVICE_ENDPOINT_1};
+        include /etc/nginx/proxy_params.conf;
+    }
+}
+
+# HTTPS Server (only included if certificate exists)
+${SSL_SERVER_BLOCKS}
