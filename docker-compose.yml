@@ -1,10 +1,10 @@
 services:
   wireguard:
     build:
+      context: .
       dockerfile: Dockerfile
-    image: linuxserver/wireguard
+    image: wireguard-custom
     container_name: wireguard
-    user: root
     entrypoint: ["/scripts/entrypoint_wireguard.sh"]
     cap_add:
       - NET_ADMIN
@@ -23,13 +23,12 @@ services:
           - vpn
     ports:
       - "51820:51820/udp"
-    privileged: true
     volumes:
       - ./keys_in:/wg/keys_in
       - ./keys_out:/wg/keys_out
-      - ./config/wireguard/wg0.conf.tpl:/wg0.conf.tpl
+      - ./wg0.conf.tpl:/config/wireguard/wg0.conf.tpl
       - ./scripts/entrypoint_wireguard.sh:/scripts/entrypoint_wireguard.sh
-      - ./.env:/wg/.env   
+      - ./.env:/wg/.env
     restart: unless-stopped
 
   nginx:
