@@ -1,0 +1,38 @@
+# Environment variables
+.env
+*.env
+.env.*
+
+# WireGuard keys and configurations
+keys_in/*
+keys_out/*
+*.key
+*.conf
+!wg0.conf.tpl
+!nginx.conf
+!default.conf
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
