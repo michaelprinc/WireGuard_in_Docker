@@ -15,8 +15,8 @@ RUN apk add --no-cache \
     openrc
 
 # Copy configurations
-COPY config/nginx/nginx.conf /etc/nginx/nginx.conf.default
-COPY config/nginx/nginx_advanced.conf /etc/nginx/nginx_advanced.conf.default
+COPY config/nginx/templates /etc/nginx/templates
+COPY config/nginx/nginx_advanced.conf.template /etc/nginx/nginx_advanced.conf.template
 COPY scripts/entrypoint_advanced_nginx.sh /entrypoint.sh
 
 # Create directories

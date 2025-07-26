@@ -30,6 +30,17 @@ Before you begin, ensure you have:
    - Set `PEER_ENDPOINT` to your peer's public IP address
    - DO NOT commit the `.env` file to version control
 
+4. Create `.env.website`
+   - This file controls the NGINX proxy behaviour
+   - Example contents:
+     ```bash
+     ADVANCED_CONFIGURATION=0
+     SSL_ENABLED=0
+     WEBSITE_DOMAIN=example.com
+     CERTBOT_ENABLED=0
+     ```
+   - Place the file next to `docker-compose.yml`
+
 ## Security Considerations
 
 1. **Key Management**
@@ -115,24 +126,35 @@ Before you begin, ensure you have:
     ```
     Replace `<your_peer_endpoint>` with the actual public IP address of your peer.
 
-2.  **Update `docker-compose.yml`:**
+2.  **Create the `.env.website` file:**
+    ```bash
+    cat > .env.website <<'EOL'
+    ADVANCED_CONFIGURATION=0
+    SSL_ENABLED=0
+    WEBSITE_DOMAIN=example.com
+    CERTBOT_ENABLED=0
+    EOL
+    ```
+    Adjust these values if you plan to use HTTPS or advanced NGINX features.
+
+3.  **Update `docker-compose.yml`:**
     - Mount the correct NGINX configuration file.
     - Remove the `user: root` and `privileged: true` from the `wireguard` service.
     - Mount the `.env` file.
 
-3.  **Update `Dockerfile`:**
+4.  **Update `Dockerfile`:**
     - Remove the redundant `COPY` commands.
 
-4.  **Update `nginx.conf`:**
+5.  **Update `nginx.conf`:**
     - Change the `proxy_pass` directive to use the correct service name and port.
 
-5.  **Create `install_docker_and_compose.sh`:**
+6.  **Create `install_docker_and_compose.sh`:**
     - Add commands to install Docker and Docker Compose.
 
-6.  **Create `configure_gcp_firewall.sh`:**
+7.  **Create `configure_gcp_firewall.sh`:**
     - Add `gcloud` commands to create firewall rules for ports 80 and 51820.
 
-7.  **Run the setup:**
+8.  **Run the setup:**
     - Run `init_project.sh` to create the necessary directory structure
     - Run `install_docker_and_compose.sh` on your GCP server
     - Run `configure_gcp_firewall.sh` on your local machine with `gcloud` configured
