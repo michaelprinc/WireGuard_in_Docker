@@ -1,0 +1,34 @@
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+# Redirect all HTTP to HTTPS
+server {
+    listen 80;
+    server_name ${WEBSITE_DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# Main HTTPS Server
+server {
+    listen 443 ssl http2;
+    server_name ${WEBSITE_DOMAIN};
+
+    ssl_certificate /etc/letsencrypt/live/${WEBSITE_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${WEBSITE_DOMAIN}/privkey.pem;
+    include /etc/nginx/ssl_params.conf;
+    include /etc/nginx/security_headers.conf;
+
+    location / {
+        proxy_pass http://${SERVICE_ENDPOINT_1};
+        include /etc/nginx/proxy_params.conf;
+    }
+}
