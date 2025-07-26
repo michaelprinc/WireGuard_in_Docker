@@ -2,6 +2,51 @@
 
 This project sets up a WireGuard VPN server using Docker and provides public access to a service running behind the VPN on port 3080 through port 80 using an NGINX proxy.
 
+## Prerequisites
+
+Before you begin, ensure you have:
+1. Docker and Docker Compose installed
+2. Access to both server and peer machines
+3. Permissions to configure firewall rules (if using GCP)
+4. The public IP address of your peer WireGuard instance
+
+## Initial Setup
+
+1. Run the initialization script:
+   ```bash
+   chmod +x init_project.sh
+   ./init_project.sh
+   ```
+   This creates the necessary directory structure and configuration files.
+
+2. **Important:** Exchange WireGuard Keys
+   - After first run, your server's public key will be in `keys_out/publickey`
+   - Share this key with your peer
+   - Get your peer's public key and place it in `keys_in/peer_publickey`
+   - Keys must be exchanged BEFORE starting the containers
+
+3. Configure Environment
+   - Edit the `.env` file with your specific settings
+   - Set `PEER_ENDPOINT` to your peer's public IP address
+   - DO NOT commit the `.env` file to version control
+
+## Security Considerations
+
+1. **Key Management**
+   - Keep private keys secure and never commit them to version control
+   - Rotate keys periodically (recommended every 6 months)
+   - Backup keys securely
+
+2. **Network Security**
+   - The project exposes ports 80 (HTTP) and 51820 (WireGuard)
+   - Consider using HTTPS for the NGINX proxy in production
+   - Regularly monitor connection logs
+
+3. **Permission Requirements**
+   - WireGuard container requires root privileges
+   - Secure the host system appropriately
+   - Follow the principle of least privilege for the NGINX container
+
 ## Project Structure
 
 - `docker-compose.yml`: Defines the WireGuard and NGINX services.
@@ -88,6 +133,85 @@ This project sets up a WireGuard VPN server using Docker and provides public acc
     - Add `gcloud` commands to create firewall rules for ports 80 and 51820.
 
 7.  **Run the setup:**
-    - Run `install_docker_and_compose.sh` on your GCP server.
-    - Run `configure_gcp_firewall.sh` on your local machine with `gcloud` configured.
-    - Run `docker-compose up -d`.
+    - Run `init_project.sh` to create the necessary directory structure
+    - Run `install_docker_and_compose.sh` on your GCP server
+    - Run `configure_gcp_firewall.sh` on your local machine with `gcloud` configured
+    - Exchange WireGuard keys with your peer
+    - Run `docker-compose up -d`
+
+## Troubleshooting
+
+1. **Connection Issues**
+   - Verify peer's public key is correctly placed in `keys_in/peer_publickey`
+   - Check if ports 80 and 51820 are open in your firewall
+   - Verify the `PEER_ENDPOINT` in `.env` is correct
+   - Check container logs: `docker-compose logs -f`
+
+2. **Permission Issues**
+   - Ensure proper file permissions on key directories
+   - Verify Docker has access to mounted volumes
+   - Check if WireGuard module is loaded: `lsmod | grep wireguard`
+
+3. **Nginx Issues**
+   - Verify the proxy_pass target is correct
+   - Check Nginx logs: `docker-compose logs nginx`
+   - Test internal connectivity: `docker exec nginx ping wireguard`
+
+## Configuration Changes and Maintenance
+
+1. **Rebuilding After Changes**
+   When making substantial changes to the configuration, you should rebuild the containers:
+   ```bash
+   # Stop and remove containers
+   docker-compose down
+
+   # Remove old images (important after Dockerfile changes)
+   docker-compose rm -f
+   docker rmi $(docker images -q 'wireguard_*')
+
+   # Rebuild and start containers
+   docker-compose build --no-cache
+   docker-compose up -d
+
+   # View logs to check for issues
+   docker-compose logs -f
+   ```
+
+   Important: Rebuild is necessary after changes to:
+   - Dockerfile or docker-compose.yml
+   - WireGuard configuration (wg0.conf.tpl)
+   - Nginx configuration files
+   - Environment variables (.env file)
+
+2. **Key Rotation**
+   - Stop the containers: `docker-compose down`
+   - Generate new keys and exchange with peer
+   - Update the key files in the appropriate directories
+   - Rebuild and restart: `docker-compose up -d --build`
+
+2. **Monitoring**
+   - Check WireGuard status: `docker exec wireguard wg show`
+   - Monitor connections: `docker exec wireguard tcpdump -i wg0`
+   - View Nginx access logs: `docker-compose logs -f nginx`
+
+3. **Backup**
+   - Regularly backup the `keys_in` and `keys_out` directories
+   - Keep a copy of your `.env` file
+   - Document any custom configurations
+
+## Common Issues
+
+1. **"wget" works from WireGuard but not from Nginx**
+   - Verify routing rules in the WireGuard configuration
+   - Check if proper NAT is set up for the Docker network
+   - Ensure both containers have correct network capabilities
+
+2. **Container Startup Failures**
+   - Check if all required files and directories exist
+   - Verify permissions on mounted volumes
+   - Review container logs for specific errors
+
+3. **Key Exchange Issues**
+   - Ensure keys are in the correct format (base64)
+   - Verify file permissions
+   - Check for proper line endings (use dos2unix if needed)
